@@ -60,6 +60,6 @@ setup_user_and_group() {
 }
 
 # 如果直接執行此腳本(非 source)
-if [ "${BASH_SOURCE[0]}" -ef "$0" ]; then
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
     setup_user_and_group "${1:-99}" "${2:-100}"
 fi
