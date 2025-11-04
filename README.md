@@ -102,5 +102,3 @@ docker-compose down
 [2025-11-04 10:00:04] ✓ 已設定資料夾權限: 777
 [2025-11-04 10:00:04] 完成處理: /watch/test1
 ```
-
-現在你的設定就跟 LinuxServer.io 的容器一樣使用 `PUID` 和 `PGID` 了!
