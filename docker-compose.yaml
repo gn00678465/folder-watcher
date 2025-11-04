@@ -1,0 +1,33 @@
+services:
+  folder-watcher:
+    build: .
+    container_name: folder-watcher
+    restart: unless-stopped
+    network_mode: none
+    environment:
+      # 監聽的資料夾路徑
+      - WATCH_DIR=/watch
+      
+      # 要設定的權限(777 = rwxrwxrwx)
+      - PERMISSIONS=777
+      
+      # 要設定的擁有者 (格式: user:group 或 uid:gid)
+      # 範例:
+      # - OWNER=nobody:users
+      # - OWNER=99:100
+      # - OWNER=1000:1000
+      # 如果不設定則不變更擁有者
+      - OWNER=nobody:users
+      
+      # 等待檔案穩定的時間(秒)
+      - SETTLE_TIME=3
+      
+      # 檢查間隔(秒)
+      - CHECK_INTERVAL=1
+      
+    volumes:
+      # 將你要監聽的 Unraid 資料夾掛載到 /watch
+      - /mnt/user/your-folder:/watch
+      
+    # 需要以 root 身份運行才能變更檔案擁有者
+    user: "0:0"
