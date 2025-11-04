@@ -1,9 +1,12 @@
 #!/bin/bash
 # entrypoint.sh
 
+# LinuxServer.io 風格的 PUID/PGID 處理
+PUID="${PUID:-99}"
+PGID="${PGID:-100}"
+
 WATCH_DIR="${WATCH_DIR:-/watch}"
 PERMISSIONS="${PERMISSIONS:-777}"
-OWNER="${OWNER:-}"
 SETTLE_TIME="${SETTLE_TIME:-3}"
 CHECK_INTERVAL="${CHECK_INTERVAL:-1}"
 
@@ -14,15 +17,20 @@ LOCK_FILE="/tmp/pending_items.lock"
 echo "========================================"
 echo "資料夾權限監控服務啟動"
 echo "========================================"
+echo "使用者 ID (PUID): $PUID"
+echo "群組 ID (PGID): $PGID"
 echo "監聽路徑: $WATCH_DIR"
 echo "目標權限: $PERMISSIONS"
-if [ -n "$OWNER" ]; then
-    echo "目標擁有者: $OWNER"
-else
-    echo "目標擁有者: (不變更)"
-fi
 echo "穩定等待: ${SETTLE_TIME}秒"
 echo "========================================"
+echo ""
+
+# 載入並執行使用者設定腳本
+source /setup-user.sh
+if ! setup_user_and_group "$PUID" "$PGID"; then
+    echo "錯誤: 使用者和群組設定失敗"
+    exit 1
+fi
 
 # 初始化檔案
 > "$PENDING_FILE"
@@ -63,13 +71,11 @@ process_settled_items() {
                         
                         # 判斷是檔案還是資料夾
                         if [ -d "$item" ]; then
-                            # 資料夾
-                            if [ -n "$OWNER" ]; then
-                                if chown -R "$OWNER" "$item" 2>/dev/null; then
-                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✓ 已設定資料夾擁有者: $OWNER"
-                                else
-                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✗ 設定資料夾擁有者失敗"
-                                fi
+                            # 資料夾:遞迴設定
+                            if chown -R "$PUID:$PGID" "$item" 2>/dev/null; then
+                                echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✓ 已設定資料夾擁有者: $PUID:$PGID"
+                            else
+                                echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✗ 設定資料夾擁有者失敗"
                             fi
                             
                             if chmod -R "$PERMISSIONS" "$item" 2>/dev/null; then
@@ -79,12 +85,10 @@ process_settled_items() {
                             fi
                         else
                             # 檔案
-                            if [ -n "$OWNER" ]; then
-                                if chown "$OWNER" "$item" 2>/dev/null; then
-                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✓ 已設定檔案擁有者: $OWNER"
-                                else
-                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✗ 設定檔案擁有者失敗"
-                                fi
+                            if chown "$PUID:$PGID" "$item" 2>/dev/null; then
+                                echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✓ 已設定檔案擁有者: $PUID:$PGID"
+                            else
+                                echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✗ 設定檔案擁有者失敗"
                             fi
                             
                             if chmod "$PERMISSIONS" "$item" 2>/dev/null; then

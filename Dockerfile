@@ -4,13 +4,14 @@ FROM alpine:latest
 RUN apk add --no-cache \
     inotify-tools \
     bash \
-    coreutils
+    coreutils \
+    shadow
 
 # 複製腳本
+COPY setup-user.sh /setup-user.sh
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
-# 設定工作目錄
-WORKDIR /
+# 設定執行權限
+RUN chmod +x /setup-user.sh /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
